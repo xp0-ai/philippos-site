@@ -1,0 +1,41 @@
+name: Deploy philippos.xp0.ai
+
+# Jeder Push auf main deployt public/ sofort live auf https://philippos.xp0.ai/.
+# Der Server-Webroot wird zum exakten Git-Stand (rsync --delete im
+# forced-command-Skript /usr/local/bin/philippos-deploy.sh auf dem Prod-Server).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-philippos
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy public/ to server
+        env:
+          DEPLOY_KEY:  ${{ secrets.PHILIPPOS_DEPLOY_KEY }}
+          DEPLOY_HOST: ${{ secrets.PHILIPPOS_DEPLOY_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          # Der Deploy-Key ist serverseitig auf das Deploy-Skript beschränkt
+          # (forced command) — er kann nur die Website deployen, sonst nichts.
+          tar czf - -C public . | ssh -i ~/.ssh/deploy_key -o BatchMode=yes "xpo-agent@${DEPLOY_HOST}"
+
+      - name: Verify live
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://philippos.xp0.ai/)
+            if [ "$code" = "200" ]; then echo "✓ philippos.xp0.ai live (200)"; exit 0; fi
+            sleep 2
+          done
+          echo "✗ live-check fehlgeschlagen (letzter Status: $code)"; exit 1

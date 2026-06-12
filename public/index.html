@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHILIPPOS — Verstehst du auch, was du liest?</title>
+<meta name="description" content="Philippos liest die handschriftlichen Dokumente Ihrer Mitarbeiter, versteht sie Zeile für Zeile und macht handschriftliche Erfassung messbar — ein System, das jeden Monat besser wird.">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{
+  --paper:#faf7f0;         /* Bühne (hell) */
+  --paper-2:#f3eee1;
+  --card:#ffffff;
+  --ink:#1c2740;           /* Text */
+  --ink-dim:#5c6788;
+  --line:#e4dcc7;
+  --amber:#c98a2d;         /* Akzent (auf hell) */
+  --amber-glow:#e9b765;
+  --green:#2f7d4f;
+  --red:#b4452f;
+  --night:#11182e;         /* dunkles Finale */
+  --night-txt:#dde3f5;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3,.serif{font-family:'Fraunces',Georgia,serif}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+a{color:inherit}
+
+/* ── Lese-Faden ── */
+#thread{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--amber),var(--amber-glow));z-index:99;box-shadow:0 1px 8px rgba(201,138,45,.45)}
+
+/* ── Header ── */
+header{position:fixed;top:0;left:0;right:0;z-index:50;transition:background .4s,backdrop-filter .4s,box-shadow .4s}
+header.solid{background:rgba(250,247,240,.82);backdrop-filter:blur(12px);box-shadow:0 1px 0 var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:64px;max-width:1240px;margin:0 auto;padding:0 28px}
+.logo{font-family:'Fraunces',serif;font-size:20px;font-weight:600;letter-spacing:.12em;color:var(--ink);text-decoration:none}
+.logo em{font-style:normal;color:var(--amber)}
+.nav-cta{font-size:13.5px;font-weight:600;color:#fff;background:var(--ink);padding:9px 18px;border-radius:99px;text-decoration:none;transition:transform .15s}
+.nav-cta:hover{transform:translateY(-1px)}
+
+/* ── Hero ── */
+.hero{position:relative;height:100svh;min-height:640px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:radial-gradient(1100px 600px at 50% 30%, #fffdf8, var(--paper) 70%)}
+#dust{position:absolute;inset:0;width:100%;height:100%}
+.hero-inner{position:relative;text-align:center;z-index:2;padding:0 24px}
+.hero .kicker{font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber);font-weight:700;opacity:0;animation:rise 1s ease .4s forwards}
+.hero h1{font-size:clamp(34px,6vw,72px);font-weight:300;color:var(--ink);line-height:1.12;margin:22px 0 10px;letter-spacing:-.01em;min-height:1.2em}
+.hero h1 .caret{display:inline-block;width:.05em;background:var(--amber);height:.9em;vertical-align:-.08em;margin-left:3px;animation:blink 1s steps(1) infinite}
+.hero .ref{font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);font-weight:700;opacity:0;animation:rise 1s ease 2.8s forwards}
+.hero .sub{max-width:56ch;margin:30px auto 0;color:var(--ink-dim);font-size:18px;opacity:0;animation:rise 1s ease 3.3s forwards}
+.hero .sub strong{color:var(--ink)}
+.scroll-hint{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);color:var(--ink-dim);font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:0;animation:rise 1s ease 4s forwards}
+.scroll-hint::after{content:"";display:block;width:1.5px;height:38px;background:linear-gradient(var(--amber),transparent);margin:10px auto 0;animation:drip 1.8s ease infinite}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes blink{50%{opacity:0}}
+@keyframes drip{0%{transform:scaleY(0);transform-origin:top}55%{transform:scaleY(1);transform-origin:top}56%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* ── Kapitel-Köpfe ── */
+.chapter{padding:120px 0 40px;text-align:center}
+.chapter .num{font-family:'Fraunces',serif;font-size:15px;color:var(--amber);letter-spacing:.25em;text-transform:uppercase}
+.chapter h2{font-size:clamp(28px,4.4vw,52px);font-weight:300;color:var(--ink);margin-top:14px;line-height:1.15}
+.chapter h2 strong{font-weight:600}
+.chapter p{max-width:60ch;margin:20px auto 0;color:var(--ink-dim);font-size:17px}
+
+/* ── Szene 1: Der Scan (sticky) ── */
+.scene{position:relative}
+.scene .pin{position:sticky;top:0;height:100svh;min-height:620px;display:flex;align-items:center;overflow:hidden}
+.scan-stage{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;width:100%}
+@media(max-width:900px){.scan-stage{grid-template-columns:1fr;gap:28px}}
+.doc{position:relative;background:var(--card);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 24px 60px rgba(28,39,64,.16);padding:26px 24px;aspect-ratio:3/4;max-height:72svh;margin:0 auto;width:min(420px,90%)}
+.doc .dhead{height:12px;width:55%;background:#ece5d2;border-radius:6px;margin-bottom:6px}
+.doc .dhead.s2{width:34%;margin-bottom:18px}
+.doc table{width:100%;border-collapse:collapse}
+.doc td{border:1px solid #ddd5c0;height:34px;padding:2px 6px}
+.doc td:first-child{width:34px;font-family:'Fraunces',serif;font-size:13px;color:#a89f86;text-align:center}
+.doc .rowline{opacity:.22;transition:opacity .3s}
+.doc .rowline.lit{opacity:1}
+.doc svg{display:block;width:100%;height:24px}
+.beam{position:absolute;left:-4%;right:-4%;height:54px;top:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent, rgba(233,183,101,.2) 35%, rgba(233,183,101,.42) 50%, rgba(233,183,101,.2) 65%, transparent);
+  border-top:1px solid rgba(201,138,45,.55);border-bottom:1px solid rgba(201,138,45,.55);
+  box-shadow:0 0 40px rgba(233,183,101,.4);opacity:0;will-change:transform,opacity}
+.ledger{max-width:430px}
+.ledger .lt{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:18px}
+.lrow{display:grid;grid-template-columns:38px 1fr 96px 86px;gap:12px;align-items:center;padding:11px 14px;border-radius:9px;background:var(--card);border:1px solid var(--line);box-shadow:0 3px 10px rgba(28,39,64,.06);margin-bottom:10px;opacity:0;transform:translateX(26px);transition:opacity .45s,transform .45s}
+.lrow.on{opacity:1;transform:none}
+.lrow .ln{font-family:'Fraunces',serif;color:var(--ink-dim);text-align:center}
+.lrow .lv{font-size:16px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.lrow .lc{font-size:13px;font-weight:700;color:var(--green);text-align:right}
+.lrow .lb{font-size:11px;font-weight:700;text-align:center;padding:4px 0;border-radius:99px;background:rgba(47,125,79,.1);color:var(--green)}
+.lrow.warn .lc{color:var(--amber)}
+.lrow.warn .lb{background:rgba(201,138,45,.12);color:var(--amber)}
+.scene-cap{position:absolute;bottom:30px;left:0;right:0;text-align:center;font-size:13px;color:var(--ink-dim);letter-spacing:.06em}
+
+/* ── Szene 2: Die Zeile ── */
+.shift-stage{max-width:760px;margin:0 auto;width:100%}
+.shift-row{display:grid;grid-template-columns:44px 1.2fr 1fr;gap:14px;align-items:center;padding:10px 14px;border-radius:9px;margin-bottom:9px;background:var(--card);border:1px solid var(--line);box-shadow:0 3px 10px rgba(28,39,64,.06);transition:transform .6s cubic-bezier(.2,.8,.25,1.1),border-color .5s,background .5s}
+.shift-row .sn{font-family:'Fraunces',serif;color:var(--ink-dim);text-align:center}
+.shift-row .snip{height:34px;background:#fdfbf6;border:1px solid #eee7d6;border-radius:6px;position:relative;overflow:hidden}
+.shift-row .val{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:10px}
+.shift-row .tick{font-size:13.5px;opacity:0;transition:opacity .4s;color:var(--green);font-weight:600}
+/* Zeile zunächst verschoben + rot (von Hand vertippt) … */
+.shift-row.movable{transform:translateY(var(--shift));border-color:rgba(180,69,47,.45);background:#fdf1ee}
+.shift-row.movable .val{color:var(--red)}
+/* … rastet beim Scrollen einzeln ein: grün, am Platz, ✓ verankert. */
+.shift-row.locked{transform:none;border-color:rgba(47,125,79,.4);background:#f2faf4}
+.shift-row.locked .val{color:var(--ink)}
+.shift-row.locked .tick{opacity:1}
+.anchor-line{position:absolute;left:8px;top:50%;width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber-glow);opacity:0;transition:opacity .5s}
+.shift-row.locked .anchor-line{opacity:1}
+.shift-caption{text-align:center;margin-top:88px;font-size:15px;color:var(--ink-dim);min-height:48px;transition:color .4s}
+.shift-caption strong{color:var(--ink)}
+.shift-caption.bad strong{color:var(--red)}
+.shift-caption.good strong{color:var(--green)}
+
+/* ── Szene 3: Das Gate ── */
+.gate-stage{position:relative;height:300px;max-width:860px;margin:30px auto 0}
+.gate{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:120px;height:200px;border:2.5px solid var(--amber);border-radius:14px;box-shadow:0 14px 44px rgba(201,138,45,.22), inset 0 0 26px rgba(233,183,101,.12);background:rgba(255,255,255,.5)}
+.gate::before{content:"QUALITY GATE";position:absolute;top:-28px;left:50%;transform:translateX(-50%);font-size:10.5px;letter-spacing:.24em;color:var(--amber);font-weight:700;white-space:nowrap}
+.gcard{position:absolute;top:50%;width:74px;height:50px;background:var(--card);border:1px solid var(--line);border-radius:5px;box-shadow:0 8px 22px rgba(28,39,64,.18);transform:translateY(-50%)}
+.gcard .gl{height:4px;background:#ddd5c0;border-radius:2px;margin:8px 9px 5px}
+.gcard .gl.g2{width:60%;margin-top:0;margin-bottom:0}
+.gcard.pass1{animation:pass 5s linear infinite}
+.gcard.pass2{animation:pass 5s linear 2.5s infinite}
+.gcard.held{left:50%;transform:translate(-50%,-50%);outline:3px solid rgba(201,138,45,.6);outline-offset:4px;animation:heldPulse 2s ease infinite}
+.gcard.held::after{content:"wartet auf einen Menschen";position:absolute;top:60px;left:50%;transform:translateX(-50%);font-size:11.5px;color:var(--amber);white-space:nowrap;font-weight:700}
+@keyframes pass{0%{left:-10%;opacity:0}8%{opacity:1}46%{left:calc(50% - 37px)}54%{left:calc(50% - 37px)}92%{opacity:1}100%{left:104%;opacity:0}}
+@keyframes heldPulse{0%,100%{outline-color:rgba(201,138,45,.6)}50%{outline-color:rgba(201,138,45,.15)}}
+.gate-copy{max-width:62ch;margin:40px auto 0;text-align:center;color:var(--ink-dim);font-size:16px}
+.gate-copy strong{color:var(--ink)}
+
+/* ── Szene 4: Kreislauf ── */
+.loop-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;margin-top:50px}
+@media(max-width:900px){.loop-grid{grid-template-columns:1fr}}
+.loop-list{list-style:none}
+.loop-list li{padding:16px 0 16px 52px;position:relative;opacity:.22;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.loop-list li.on{opacity:1;transform:none}
+.loop-list li::before{content:"";position:absolute;left:14px;top:24px;width:14px;height:14px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px rgba(233,183,101,.7)}
+.loop-list li:not(:last-child)::after{content:"";position:absolute;left:20px;top:44px;bottom:-12px;width:2px;background:rgba(201,138,45,.25)}
+.loop-list h3{font-size:18px;color:var(--ink);font-weight:600;margin-bottom:4px}
+.loop-list p{font-size:14.5px;color:var(--ink-dim)}
+.curve-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:32px;box-shadow:0 14px 40px rgba(28,39,64,.1)}
+.curve-card .ct{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:700}
+.curve-card .cv{font-family:'Fraunces',serif;font-size:32px;color:var(--ink);margin:6px 0 20px;font-weight:400}
+#curvepath{stroke-dasharray:600;stroke-dashoffset:600;transition:stroke-dashoffset 1.6s ease}
+.curve-card.on #curvepath{stroke-dashoffset:0}
+.curve-note{font-size:12.5px;color:var(--ink-dim);margin-top:14px}
+
+/* ── Zähler ── */
+.counters{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:70px auto 0;max-width:920px}
+@media(max-width:760px){.counters{grid-template-columns:1fr}}
+.counter{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px;text-align:center;box-shadow:0 6px 18px rgba(28,39,64,.07)}
+.counter .cnum{font-family:'Fraunces',serif;font-size:52px;color:var(--ink);font-weight:300;line-height:1}
+.counter .clab{font-size:13.5px;color:var(--ink-dim);margin-top:10px}
+.counter .clab strong{color:var(--ink)}
+
+/* ── Finale: Die Philippus-Szene (dunkler Kontrast) ── */
+.night{background:var(--night);color:var(--night-txt);margin-top:140px;clip-path:polygon(0 40px,100% 0,100% 100%,0 100%)}
+.night-inner{padding:150px 0 110px;text-align:center}
+.night .verse{font-family:'Fraunces',serif;font-size:clamp(21px,3vw,32px);font-weight:300;line-height:1.5;max-width:42ch;margin:0 auto;color:#f0ecdf}
+.night .verse strong{font-weight:600;color:var(--amber-glow)}
+.night .vref{margin-top:18px;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber-glow);font-weight:700}
+.night .expl{max-width:60ch;margin:32px auto 0;color:#aab3d0;font-size:16.5px}
+.night .expl strong{color:#f0ecdf}
+.wl{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:52px}
+.wl .chip{display:inline-block;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:14px 22px;font-family:'Fraunces',serif;font-size:16px;color:#c4cce4;text-decoration:none;transition:border-color .2s,transform .15s}
+.wl a.chip:hover{border-color:var(--amber-glow);transform:translateY(-2px)}
+.wl .chip b{color:#fff}
+.wl-note{margin-top:14px;font-size:13.5px;color:#8f99bb}
+.cta-final{margin-top:54px}
+.btn{display:inline-block;padding:16px 34px;border-radius:99px;font-weight:600;font-size:16px;text-decoration:none;background:var(--amber-glow);color:var(--night);box-shadow:0 10px 34px rgba(233,183,101,.3);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+
+/* ── Footer ── */
+footer{background:var(--night);color:#8f99bb;border-top:1px solid rgba(255,255,255,.1);padding:38px 0;font-size:13.5px}
+.foot{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:center}
+.foot .flogo{font-family:'Fraunces',serif;font-weight:600;letter-spacing:.12em;color:#f0ecdf}
+.foot .flogo em{font-style:normal;color:var(--amber-glow)}
+.foot a{color:#aab3d0}
+
+/* ── Kapitel 4: Konsolidierung als Reißverschluss (scroll-getrieben) ── */
+.zip-head{display:flex;justify-content:space-between;max-width:600px;margin:0 auto 22px;font-size:13px;font-weight:600}
+.zh{display:flex;align-items:center;gap:8px}
+.zh-hand{color:var(--amber)} .zh-xls{color:var(--green)}
+.zhi{display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:6px;font-size:13px}
+.zh-hand .zhi{background:rgba(201,138,45,.14)} .zh-xls .zhi{background:rgba(47,125,79,.13)}
+.zip{position:relative;max-width:600px;margin:0 auto;padding:4px 0}
+.zip-spine{position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);
+  background:linear-gradient(180deg,var(--amber),var(--green));opacity:.22;border-radius:2px}
+.zip-rows{position:relative;display:flex;flex-direction:column;gap:10px}
+.zip-row{position:relative;height:40px;display:flex;align-items:center;justify-content:center}
+.tooth{position:relative;width:218px;height:38px;background:var(--card);border:1px solid var(--line);border-radius:9px;box-shadow:0 3px 10px rgba(28,39,64,.07);
+  transition:transform .5s cubic-bezier(.2,.8,.25,1.1),opacity .4s,box-shadow .4s,border-color .4s}
+@media(max-width:560px){.tooth{width:170px}}
+/* Zwei Layer übereinander: t-raw = Rohformat (offen), t-clean = verstandener Wert (geschlossen) */
+.t-raw,.t-clean{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:7px;padding:0 12px;transition:opacity .45s}
+.t-raw{opacity:1}
+.t-clean{opacity:0;font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.zip-row.closed .t-raw{opacity:0}
+.zip-row.closed .t-clean{opacity:1}
+.t-raw svg{width:128px;height:18px}
+.t-xls{gap:4px}
+.xcell{font-size:10.5px;font-variant-numeric:tabular-nums;background:#eef6f0;border:1px solid #cfe3d6;border-radius:3px;padding:2px 5px;color:#3a5a47}
+.xc-n{color:#8aa596}
+.t-badge{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px}
+.src-hand .t-badge{background:rgba(201,138,45,.14);color:var(--amber)}
+.src-xls  .t-badge{background:rgba(47,125,79,.13);color:var(--green)}
+/* offen: gespreizt nach außen + gedämpft */
+.zip-row.src-hand .tooth{transform:translateX(-160px);opacity:.5;border-color:rgba(201,138,45,.4)}
+.zip-row.src-xls  .tooth{transform:translateX(160px);opacity:.5;border-color:rgba(47,125,79,.4)}
+@media(max-width:560px){.zip-row.src-hand .tooth{transform:translateX(-90px)}.zip-row.src-xls .tooth{transform:translateX(90px)}}
+/* geschlossen: verzahnt in die Mittelspur, voll sichtbar */
+.zip-row.closed .tooth{transform:translateX(0);opacity:1;box-shadow:0 6px 18px rgba(28,39,64,.13)}
+.zip-row.closed.src-hand .tooth{border-color:rgba(201,138,45,.55)}
+.zip-row.closed.src-xls  .tooth{border-color:rgba(47,125,79,.55)}
+.zip-slider{position:absolute;left:50%;top:0;width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;z-index:3;
+  display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 5px 16px rgba(28,39,64,.32);
+  transform:translate(-50%,2px);transition:transform .3s cubic-bezier(.2,.8,.25,1.1),opacity .3s}
+.zip-caption{text-align:center;margin-top:30px;font-size:15.5px;color:var(--ink-dim);min-height:48px;transition:color .4s}
+.zip-caption strong{color:var(--ink)}
+.zip-caption.done strong{color:var(--green)}
+/* Abschluss-Block: Export + messbar (per IO eingeblendet) */
+.zip-out{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:6px;
+  opacity:0;transform:translateY(10px);transition:opacity .6s ease,transform .6s ease}
+.zip-out.on{opacity:1;transform:none}
+.ax-label{font-size:13px;color:var(--ink-dim);margin-right:2px}
+.ax-chip{font-size:12.5px;font-weight:600;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 14px;box-shadow:0 3px 10px rgba(28,39,64,.06)}
+.ax-chip.ok{background:rgba(47,125,79,.1);border-color:rgba(47,125,79,.3);color:var(--green)}
+.merge-note{max-width:64ch;margin:26px auto 0;text-align:center;color:var(--ink-dim);font-size:16px}
+.merge-note strong{color:var(--ink)}
+
+/* ── Das Fundament: On-Premise (dunkler Vertrauens-Anker) ── */
+.onprem{background:var(--night);color:var(--night-txt);padding:84px 0 78px;text-align:center}
+.op-eyebrow{font-size:13px;letter-spacing:.26em;text-transform:uppercase;color:var(--amber-glow);font-weight:700}
+.op-head{font-size:clamp(28px,4.2vw,46px);font-weight:300;color:#f0ecdf;margin-top:14px;line-height:1.15}
+.op-head strong{font-weight:600;color:var(--amber-glow)}
+.op-lead{max-width:66ch;margin:22px auto 0;color:#aab3d0;font-size:17px}
+.op-lead strong{color:#f0ecdf}
+.op-diagram{margin:48px auto 0;max-width:780px}
+.op-frame{position:relative;border:1.5px solid rgba(233,183,101,.55);border-radius:16px;padding:44px 26px 28px;background:rgba(255,255,255,.03);
+  box-shadow:0 0 0 0 rgba(233,183,101,.35);animation:opshield 3.4s ease-in-out infinite}
+@keyframes opshield{0%,100%{box-shadow:0 0 24px -6px rgba(233,183,101,.25), inset 0 0 30px -10px rgba(233,183,101,.15)}50%{box-shadow:0 0 40px -4px rgba(233,183,101,.45), inset 0 0 34px -8px rgba(233,183,101,.25)}}
+.op-frame-label{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--night);padding:0 14px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber-glow);font-weight:700;white-space:nowrap}
+.op-lock{font-size:13px}
+.op-cycle{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+.op-node{display:flex;flex-direction:column;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:16px 20px;min-width:128px}
+.op-ico{font-size:22px;line-height:1}
+.op-nlabel{font-size:14px;font-weight:600;color:#f0ecdf;line-height:1.3}
+.op-nlabel small{font-weight:400;color:#8f99bb;font-size:12px}
+.op-arrow{color:var(--amber-glow);font-size:20px;font-weight:700}
+.op-return{margin-top:20px;font-size:13px;color:var(--green);display:flex;align-items:center;justify-content:center;gap:9px}
+.op-pulse{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:oppulse 1.9s ease infinite}
+@keyframes oppulse{0%,100%{opacity:.3;transform:scale(.75)}50%{opacity:1;transform:scale(1.3)}}
+/* Prominente Negativ-Karten: was es NICHT gibt */
+.op-nos{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:820px;margin:30px auto 0}
+@media(max-width:680px){.op-nos{grid-template-columns:repeat(2,1fr)}}
+.op-no{background:rgba(180,69,47,.09);border:1px solid rgba(224,122,95,.32);border-radius:14px;padding:22px 12px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;
+  opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease}
+.op-nos.on .op-no{opacity:1;transform:none}
+.op-nos.on .op-no:nth-child(2){transition-delay:.1s}.op-nos.on .op-no:nth-child(3){transition-delay:.2s}.op-nos.on .op-no:nth-child(4){transition-delay:.3s}
+.op-no-ico{position:relative;font-size:30px;line-height:1;color:#d99a8c;display:inline-flex}
+.op-slash{position:absolute;left:50%;top:50%;width:42px;height:3px;background:var(--red);border-radius:3px;transform:translate(-50%,-50%) rotate(-45deg);box-shadow:0 0 8px rgba(224,122,95,.6)}
+.op-no-t{font-size:14px;font-weight:700;color:#f0d8d0;text-align:center;line-height:1.25}
+.op-points{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:940px;margin:46px auto 0;text-align:left}
+@media(max-width:820px){.op-points{grid-template-columns:1fr}.op-cycle{flex-direction:column}.op-arrow{transform:rotate(90deg)}}
+.op-point{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:24px;
+  opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease}
+.op-points.on .op-point{opacity:1;transform:none}
+.op-points.on .op-point:nth-child(2){transition-delay:.12s}
+.op-points.on .op-point:nth-child(3){transition-delay:.24s}
+.op-point h3{font-size:17px;font-weight:600;color:#f0ecdf;margin-bottom:8px}
+.op-point p{font-size:14.5px;color:#aab3d0}
+.op-point p strong{color:var(--amber-glow)}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+  .hero .kicker,.hero .ref,.hero .sub,.scroll-hint{opacity:1}
+  .lrow{opacity:1;transform:none}
+  .loop-list li{opacity:1;transform:none}
+  #curvepath{stroke-dashoffset:0 !important}
+  .zip-row .tooth{transform:translateX(0) !important;opacity:1 !important}
+  .zip-row .t-badge{opacity:1 !important}
+  .zip-out{opacity:1 !important;transform:none !important}
+  .op-points .op-point{opacity:1 !important;transform:none !important}
+  .op-nos .op-no{opacity:1 !important;transform:none !important}
+}
+</style>
+</head>
+<body>
+
+<div id="thread"></div>
+
+<header id="hdr">
+  <div class="nav">
+    <a class="logo" href="/">PHILIPP<em>OS</em></a>
+    <a class="nav-cta" href="https://cal.com/bubedame/60-min-meeting" target="_blank" rel="noopener">Gespräch vereinbaren</a>
+  </div>
+</header>
+
+<!-- ═══════ HERO ═══════ -->
+<section class="hero">
+  <canvas id="dust" aria-hidden="true"></canvas>
+  <div class="hero-inner">
+    <div class="kicker">Aus Handschrift wird Verstehen</div>
+    <h1><span id="typed"></span><span class="caret" id="caret"></span></h1>
+    <div class="ref">Apostelgeschichte 8,30</div>
+    <p class="sub"><strong>Philippos</strong> liest die handschriftlichen Dokumente Ihrer Mitarbeiter, versteht sie Zeile für Zeile —
+    und verwandelt sie in geprüfte, messbare Qualität. Handschriftliche Dokumente funktionieren überall — ohne Akku, ohne WLAN. Das bleibt Ihre Stärke.</p>
+  </div>
+  <div class="scroll-hint">Scrollen, um zuzusehen</div>
+</section>
+
+<!-- ═══════ DAS FUNDAMENT: ON-PREMISE ═══════ -->
+<section class="onprem" id="onprem">
+  <div class="wrap">
+    <div class="op-eyebrow">Das Fundament · On-Premise</div>
+    <h2 class="op-head">Ihre Daten bleiben bei Ihnen.<br><strong>Der Vorteil daraus auch.</strong></h2>
+    <p class="op-lead">Philippos läuft als lokale KI auf <strong>Ihrer eigenen Infrastruktur</strong>. Ihre Lohn- und Personaldaten verlassen das Haus nie — und der Lerngewinn, der aus ihnen entsteht, stärkt allein Ihren Prozess.</p>
+
+    <div class="op-diagram">
+      <div class="op-frame" id="opFrame">
+        <span class="op-frame-label">Ihre Infrastruktur</span>
+        <div class="op-cycle">
+          <div class="op-node"><span class="op-ico">▤</span><span class="op-nlabel">Ihre Daten</span></div>
+          <div class="op-arrow">→</div>
+          <div class="op-node"><span class="op-ico">◎</span><span class="op-nlabel">Lokales Modell<br><small>lernt</small></span></div>
+          <div class="op-arrow">→</div>
+          <div class="op-node"><span class="op-ico">✓</span><span class="op-nlabel">Ihr Prozess<br><small>wird besser</small></span></div>
+        </div>
+        <div class="op-return"><span class="op-pulse"></span>der Gewinn fließt zurück — und bleibt im Haus</div>
+      </div>
+    </div>
+
+    <div class="op-nos" id="opNos">
+      <div class="op-no"><span class="op-no-ico">☁<i class="op-slash"></i></span><span class="op-no-t">keine Cloud</span></div>
+      <div class="op-no"><span class="op-no-ico">⇄<i class="op-slash"></i></span><span class="op-no-t">kein externer Anbieter</span></div>
+      <div class="op-no"><span class="op-no-ico">⛓<i class="op-slash"></i></span><span class="op-no-t">keine Datenabhängigkeit</span></div>
+      <div class="op-no"><span class="op-no-ico">€<i class="op-slash"></i></span><span class="op-no-t">keine zusätzlichen Kosten</span></div>
+    </div>
+
+    <div class="op-points" id="opPoints">
+      <div class="op-point"><h3>Lokales Modell</h3><p>Die KI rechnet auf Ihrer Infrastruktur. Kein Upload in eine Cloud, kein externes Konto, keine Verbindung nach außen — und <strong>keine laufenden Cloud- oder Lizenzkosten pro Beleg</strong>.</p></div>
+      <div class="op-point"><h3>Keine Abhängigkeit</h3><p>Kein Vendor-Lock-in, keine fremden API-Schlüssel, keine Preis- oder Verfügbarkeits-Überraschung eines Anbieters. DSGVO-konform per Konstruktion.</p></div>
+      <div class="op-point"><h3>Der Lerngewinn bleibt Ihrer</h3><p>Jede Verbesserung durch Ihre Daten stärkt <strong>ausschließlich</strong> Ihren Prozess — nicht das Modell eines Anbieters, von dem auch Ihre Wettbewerber profitieren.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ KAPITEL 1: DER SCAN ═══════ -->
+<div class="chapter">
+  <div class="num">Kapitel 1 · Lesen</div>
+  <h2>Sehen Sie zu, wie ein handschriftliches<br>Dokument <strong>verstanden</strong> wird.</h2>
+  <p>Kein Abtippen. Kein Raten. Scrollen Sie — und sehen Sie Philippos bei der Arbeit: Zeile für Zeile, jeder Wert pixelgenau an seiner Stelle im Original verankert, mit Konfidenz versehen. <em>(Alle Darstellungen schematisch — keine echten Daten.)</em></p>
+</div>
+
+<section class="scene" id="scanScene" style="height:340svh">
+  <div class="pin">
+    <div class="wrap scan-stage">
+      <div class="doc" id="doc">
+        <div class="dhead"></div>
+        <div class="dhead s2"></div>
+        <table id="docTable"></table>
+        <div class="beam" id="beam"></div>
+      </div>
+      <div class="ledger">
+        <div class="lt">Was Philippos liest — live</div>
+        <div id="ledgerRows"></div>
+      </div>
+    </div>
+    <div class="scene-cap">Der Scan-Strahl folgt Ihrem Scrollen · jede Zeile wird einzeln gelesen und verankert</div>
+  </div>
+</section>
+
+<!-- ═══════ KAPITEL 2: DIE ZEILE ═══════ -->
+<div class="chapter">
+  <div class="num">Kapitel 2 · Der menschliche Fehler</div>
+  <h2>Eine Zeile verrutscht —<br>und <strong>alles darunter ist falsch.</strong></h2>
+  <p>Der teuerste Fehler entsteht nicht auf dem Papier, sondern beim Abtippen von Hand: einmal um eine Zeile vertan. Scrollen Sie weiter — und sehen Sie, warum das mit Philippos unmöglich ist.</p>
+</div>
+
+<section class="scene" id="shiftScene" style="height:200svh">
+  <div class="pin">
+    <div class="wrap">
+      <div class="shift-stage" id="shiftStage"></div>
+      <div class="shift-caption" id="shiftCap"><strong>Übertragung von Hand:</strong> ab Zeile 13 ist jeder Wert um eine Zeile verschoben — und niemand merkt es.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ KAPITEL 3: DAS GATE ═══════ -->
+<div class="chapter">
+  <div class="num">Kapitel 3 · Kein blindes Vertrauen</div>
+  <h2>Was die Maschine nicht beweisen kann,<br><strong>hält sie an.</strong></h2>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="gate-stage" aria-hidden="true">
+      <div class="gate"></div>
+      <div class="gcard pass1"><div class="gl"></div><div class="gl g2"></div></div>
+      <div class="gcard pass2"><div class="gl"></div><div class="gl g2"></div></div>
+      <div class="gcard held"><div class="gl"></div><div class="gl g2"></div></div>
+    </div>
+    <p class="gate-copy">Jede Karte muss durch das <strong>Quality-Gate</strong>: Die Maschine verifiziert ihr eigenes Ergebnis
+    gegen unabhängige Anker im Original. Gelingt der Beweis nicht, wird die Karte <strong>angehalten und einem Menschen vorgelegt</strong> —
+    sie erreicht die Abrechnung nie ungeprüft. Null stille Fehler. Per Konstruktion.</p>
+  </div>
+</section>
+
+<!-- ═══════ KAPITEL 4: KONSOLIDIERUNG (Reißverschluss) ═══════ -->
+<div class="chapter">
+  <div class="num">Kapitel 4 · Eine Wahrheit aus vielen Quellen</div>
+  <h2>Handschrift <strong>und</strong> Excel —<br>in einem Schritt <strong>verzahnt.</strong></h2>
+  <p>Nicht jeder im Betrieb arbeitet gleich: Der eine bringt das handschriftliche Dokument, der andere eine Excel-Liste. Scrollen Sie — und sehen Sie, wie Philippos beide wie einen Reißverschluss zu einem einzigen, geprüften Prozess zusammenführt.</p>
+</div>
+
+<section class="scene" id="zipScene" style="height:320svh">
+  <div class="pin">
+    <div class="wrap">
+      <div class="zip-head">
+        <span class="zh zh-hand"><span class="zhi">✍</span> Handschriftliche Dokumente</span>
+        <span class="zh zh-xls"><span class="zhi">⊞</span> Excel-Liste</span>
+      </div>
+      <div class="zip" id="zip">
+        <div class="zip-spine"></div>
+        <div class="zip-rows" id="zipRows"></div>
+        <div class="zip-slider" id="zipSlider" aria-hidden="true">⇕</div>
+      </div>
+      <div class="zip-caption" id="zipCap"><strong>Zwei unterschiedlich gewachsene Quellen</strong> — getrennt erfasst, getrennt fehleranfällig.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap zip-out" id="zipOut">
+    <span class="ax-label">Ein Ergebnis → Export in Ihr Folgesystem:</span>
+    <span class="ax-chip">CSV</span>
+    <span class="ax-chip">Lohnverrechnung</span>
+    <span class="ax-chip ok">✓ geprüft &amp; messbar</span>
+  </div>
+  <p class="merge-note">Aus unterschiedlich gewachsenen Quellen wird in <strong>einem Schritt</strong> ein systematischer Prozess — jede Zeile kennt ihre Herkunft, und das Ergebnis ist von Anfang an prüfbar und messbar.</p>
+</section>
+
+<!-- ═══════ KAPITEL 5: DER KREISLAUF ═══════ -->
+<div class="chapter">
+  <div class="num">Kapitel 5 · Der eigentliche Mehrwert</div>
+  <h2>Ein System, das <strong>jeden Monat besser wird.</strong><br>Für alle gleichzeitig.</h2>
+  <p>Beim Abtippen verpufft jede Korrektur. In Philippos ist jede Korrektur ein Messpunkt — und jeder Messpunkt macht das System für alle besser.</p>
+</div>
+
+<section>
+  <div class="wrap loop-grid" id="loopGrid">
+    <ul class="loop-list" id="loopList">
+      <li><h3>Jede Korrektur wird festgehalten</h3><p>Liest die Maschine „16:00“ und der Mensch korrigiert auf „16:30“, wird beides gespeichert — unveränderlich, mit Kontext. Aus Handgriffen werden Daten.</p></li>
+      <li><h3>Muster statt Einzelfälle</h3><p>Häufen sich Korrekturen einer Art, wird nicht das einzelne Dokument geflickt, sondern die <em>Fehlerklasse</em> behoben — am Erkennungsprozess selbst.</p></li>
+      <li><h3>Verbesserung für alle, sofort</h3><p>Jeder Prozess-Fix gilt ab dem nächsten Scan für jeden Mitarbeiter, jeden Standort, jedes Formular.</p></li>
+      <li><h3>Sie müssen die KI nicht selbst entwickeln</h3><p>Die Erkennung wird Jahr für Jahr besser — diese Entwicklung müssen Sie nicht selbst stemmen. Sobald eine neue Modell-Generation reif und geprüft ist, kommt sie Ihrer Qualität zugute.</p></li>
+    </ul>
+    <div class="curve-card" id="curveCard">
+      <div class="ct">Korrekturquote je Monat</div>
+      <div class="cv">sinkt — messbar</div>
+      <svg viewBox="0 0 440 230" width="100%" aria-label="Beispielhafte Qualitätskurve">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#c98a2d" stop-opacity=".25"/><stop offset="1" stop-color="#c98a2d" stop-opacity="0"/>
+        </linearGradient></defs>
+        <g stroke="rgba(28,39,64,.12)"><line x1="40" y1="190" x2="420" y2="190"/><line x1="40" y1="30" x2="40" y2="190"/></g>
+        <path d="M55 52 L120 80 L185 116 L250 134 L315 156 L395 170 L395 190 L55 190 Z" fill="url(#g)"/>
+        <path id="curvepath" d="M55 52 L120 80 L185 116 L250 134 L315 156 L395 170" stroke="#c98a2d" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <g font-family="Inter" font-size="12" fill="#5c6788">
+          <text x="48" y="212">M1</text><text x="113" y="212">M2</text><text x="178" y="212">M3</text>
+          <text x="243" y="212">M4</text><text x="308" y="212">M5</text><text x="388" y="212">M6</text>
+        </g>
+      </svg>
+      <p class="curve-note">Beispielhafte Darstellung — Ihre echten Kurven entstehen aus Ihren echten Korrekturen: pro Formulartyp, pro Monat, schwarz auf weiß.</p>
+    </div>
+  </div>
+
+  <div class="wrap counters" id="counters">
+    <div class="counter"><div class="cnum" data-final="100" data-suffix="&thinsp;%">0</div><div class="clab"><strong>Herkunfts-Nachweis</strong> — jeder Wert bis auf den Bildausschnitt des Originals rückverfolgbar.</div></div>
+    <div class="counter"><div class="cnum" data-final="0" data-suffix="">–</div><div class="clab"><strong>stille Fehler</strong> — Unbewiesenes wird angehalten und einem Menschen vorgelegt. Immer.</div></div>
+    <div class="counter"><div class="cnum" data-static="∀">∀</div><div class="clab"><strong>Roll-out für alle</strong> — jede Prozess-Verbesserung wirkt sofort auf jeden Mitarbeiter und Monat.</div></div>
+  </div>
+</section>
+
+<!-- ═══════ FINALE: DIE PHILIPPUS-SZENE ═══════ -->
+<section class="night">
+  <div class="night-inner wrap">
+    <p class="verse">„Da lief Philippus hinzu und hörte ihn den Propheten Jesaja lesen und sprach:
+    <strong>Verstehst du auch, was du liest?</strong> Er aber sprach: Wie kann ich, wenn mich nicht jemand anleitet?“</p>
+    <div class="vref">Apostelgeschichte 8,30–31</div>
+    <p class="expl">Der Name ist Programm: Der Kämmerer ist <strong>Verwalter des ganzen königlichen Schatzes</strong> —
+    ein gebildeter, hochrangiger Mann. Ihm fehlt nicht Verstand, sondern allein der Schlüssel zum Text.
+    Philippus begleitet ihn ein Stück des Weges und öffnet, was verschlossen war —
+    danach „zog er seine Straße fröhlich“ (8,39), aus eigener Kraft.<br><br>
+    Dasselbe Verhältnis bietet diese Software: Ihre Leute, Ihr Papier, Ihr Ablauf sind richtig, wie sie sind.
+    Philippos bringt nur das hinzu, was eine Maschine um zwei Uhr nachts besser kann als jeder Mensch:
+    jede Zeile fehlerfrei lesen. Den Rest entscheiden weiter Sie.</p>
+
+    <div class="wl">
+      <a class="chip" href="https://www.sibit.at" target="_blank" rel="noopener"><b>Sibit Personalverrechnung</b> · powered by Philippos</a>
+    </div>
+    <p class="wl-note">Philippos läuft als White-Label unter Ihrer Marke — Ihre Mandanten arbeiten weiter wie gewohnt, Sie behalten Ihre Kundenbeziehung.</p>
+
+    <div class="cta-final">
+      <a class="btn" href="https://cal.com/bubedame/60-min-meeting" target="_blank" rel="noopener">Gespräch vereinbaren</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div class="flogo">PHILIPP<em>OS</em></div>
+    <div>„Verstehst du auch, was du liest?“ — Apg 8,30</div>
+    <div>Ein Produkt von <a href="https://www.xp0.ai/">xp0.ai</a> · Darstellungen schematisch</div>
+    <div><a href="/impressum.html">Impressum</a> · <a href="/datenschutz.html">Datenschutz</a></div>
+  </div>
+</footer>
+
+<script>
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ───── Faden + Header ───── */
+const thread = document.getElementById('thread'), hdr = document.getElementById('hdr');
+addEventListener('scroll', () => {
+  const p = scrollY / (document.body.scrollHeight - innerHeight);
+  thread.style.width = (p * 100) + '%';
+  hdr.classList.toggle('solid', scrollY > 40);
+}, { passive: true });
+
+/* ───── Typewriter ───── */
+const TXT = '„Verstehst du auch, was du liest?“';
+const typed = document.getElementById('typed');
+if (reduced) { typed.textContent = TXT; }
+else {
+  let i = 0;
+  setTimeout(function tick(){
+    typed.textContent = TXT.slice(0, ++i);
+    if (i < TXT.length) setTimeout(tick, 42 + Math.random()*46);
+  }, 700);
+}
+
+/* ───── Hero: Papierstaub → Ordnung (helle Bühne) ───── */
+(function(){
+  const cv = document.getElementById('dust'), ctx = cv.getContext('2d');
+  let W, H, parts = [], t0 = performance.now();
+  function size(){ W = cv.width = innerWidth * devicePixelRatio; H = cv.height = cv.offsetHeight * devicePixelRatio; }
+  size(); addEventListener('resize', size);
+  const N = innerWidth < 700 ? 120 : 260;
+  const rows = 9, cols = 30;
+  for (let i = 0; i < N; i++){
+    const r = i % rows, c = (i / rows | 0) % cols;
+    parts.push({
+      x: Math.random(), y: Math.random(),
+      vx: (Math.random()-.5)*.0004, vy: (Math.random()-.5)*.0003,
+      tx: .18 + (c/(cols-1))*.64, ty: .30 + (r/(rows-1))*.42,
+      s: .6 + Math.random()*1.7, ph: Math.random()*6.28
+    });
+  }
+  let rafId = null;
+  function frame(now){
+    const t = (now - t0) / 1000;
+    const k = reduced ? 1 : Math.min(1, Math.max(0, (t - 3) / 4));
+    ctx.clearRect(0, 0, W, H);
+    for (const p of parts){
+      if (k < 1){ p.x += p.vx; p.y += p.vy; if(p.x<0||p.x>1)p.vx*=-1; if(p.y<0||p.y>1)p.vy*=-1; }
+      const e = k*k*(3-2*k);
+      const x = (p.x + (p.tx - p.x) * e) * W;
+      const y = (p.y + (p.ty - p.y) * e) * H + (k >= 1 ? Math.sin(t*1.2 + p.ph) * 2.5 * devicePixelRatio : 0);
+      const a = (.28 + e * .5) * (.5 + .5*Math.sin(t*2+p.ph));
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(201,138,45,${a})`;
+      ctx.arc(x, y, p.s * devicePixelRatio, 0, 6.283);
+      ctx.fill();
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+  // Canvas NUR animieren, solange der Hero sichtbar ist — sonst läuft er
+  // ewig im Hintergrund (Mobile-Flackern + Akku). Beim Wiedereintritt ist
+  // die Animation eh im statischen "Atmen"-Zustand (k=1), kein Sprung.
+  if (reduced){ requestAnimationFrame(frame); }
+  else {
+    new IntersectionObserver((es) => {
+      const visible = es[0].isIntersecting;
+      if (visible && rafId === null){ rafId = requestAnimationFrame(frame); }
+      else if (!visible && rafId !== null){ cancelAnimationFrame(rafId); rafId = null; }
+    }, { threshold: 0 }).observe(document.querySelector('.hero'));
+  }
+})();
+
+/* ───── erfundene Kringel-Handschrift (SVG) ───── */
+function scribble(seed, w){
+  let d = '', x = 6;
+  while (x < w - 26){
+    const len = 16 + ((seed * 7 + x) % 18);
+    d += `M${x} ${15 + ((seed + x) % 5)} q${len/3} ${-9 - ((seed + x) % 5)} ${len/1.6} -1 q${len/4.5} ${6 + ((seed * x) % 4)} ${len/2.1} -2 `;
+    x += len + 7; seed++;
+  }
+  return d;
+}
+
+/* ───── Szene 1: Scan ───── */
+const ROWS = 10;
+const VALUES = [
+  ['06:30','98','ok'],['07:00','97','ok'],['06:45','96','ok'],['07:15','98','ok'],
+  ['06:30','95','ok'],['16:00 → 16:30','71','warn'],['07:00','97','ok'],
+  ['06:15','94','ok'],['07:30','98','ok'],['06:45','96','ok'],
+];
+(function(){
+  const tbl = document.getElementById('docTable');
+  let html = '';
+  for (let r = 0; r < ROWS; r++){
+    html += `<tr class="rowline" id="dr${r}"><td>${r+1}.</td><td><svg viewBox="0 0 260 24" preserveAspectRatio="none"><path d="${scribble(r*3+2, 250)}" stroke="#3a4a8c" stroke-width="1.9" fill="none" stroke-linecap="round" opacity=".8"/></svg></td></tr>`;
+  }
+  tbl.innerHTML = html;
+  const lr = document.getElementById('ledgerRows');
+  lr.innerHTML = VALUES.map((v, i) =>
+    `<div class="lrow ${v[2]==='warn'?'warn':''}" id="lr${i}">
+       <div class="ln">${i+1}</div><div class="lv">${v[0]}</div>
+       <div class="lc">${v[1]}&thinsp;%</div>
+       <div class="lb">${v[2]==='warn' ? 'korrigiert' : 'verifiziert'}</div>
+     </div>`).join('');
+})();
+
+function sceneProgress(el){
+  const r = el.getBoundingClientRect();
+  return Math.min(1, Math.max(0, -r.top / (r.height - innerHeight)));
+}
+
+const scanScene = document.getElementById('scanScene');
+const beam = document.getElementById('beam');
+const docTable = document.getElementById('docTable');
+const drEls = Array.from({length: ROWS}, (_, r) => document.getElementById('dr' + r));
+const lrEls = Array.from({length: ROWS}, (_, r) => document.getElementById('lr' + r));
+// Geometrie cachen (offsetTop/offsetHeight) — Layout-Read nur bei resize statt
+// jeden Frame. lastLit/lastBeamVis als State-Guards: DOM nur bei Wechsel anfassen.
+let scanGeom = null, lastLit = -99, lastBeamVis = null;
+addEventListener('resize', () => { scanGeom = null; }, { passive: true });
+function scanTick(){
+  if (!scanGeom) scanGeom = { top: docTable.offsetTop, h: docTable.offsetHeight };
+  const p = sceneProgress(scanScene);          // READ
+  const beamVis = (p > .02 && p < .98);
+  const lit = Math.floor(p * (ROWS + .6));
+  if (beamVis !== lastBeamVis){ beam.style.opacity = beamVis ? 1 : 0; lastBeamVis = beamVis; }  // WRITE (guarded)
+  if (beamVis){ beam.style.transform = `translateY(${(scanGeom.top + p * scanGeom.h - 24).toFixed(1)}px)`; }
+  if (lit !== lastLit){                          // WRITE (nur bei Zeilen-Wechsel)
+    for (let r = 0; r < ROWS; r++){
+      const on = r <= lit - 1;
+      drEls[r].classList.toggle('lit', on);
+      lrEls[r]?.classList.toggle('on', on);
+    }
+    lastLit = lit;
+  }
+}
+
+/* ───── Szene 2: Zeilen-Shift ───── */
+const SHIFT_N = 6;
+(function(){
+  const st = document.getElementById('shiftStage');
+  const vals = ['07:00','06:30','07:15','06:45','07:30','06:15'];
+  st.innerHTML = Array.from({length: SHIFT_N}, (_, i) =>
+    `<div class="shift-row ${i >= 2 ? 'movable' : ''}" style="--shift:${i >= 2 ? '52px' : '0'}">
+       <div class="sn">${i+11}</div>
+       <div class="snip"><div class="anchor-line"></div><svg viewBox="0 0 300 34" preserveAspectRatio="none" style="width:100%;height:100%"><path d="${scribble(i*5+9, 290)}" stroke="#3a4a8c" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8" transform="translate(0,5)"/></svg></div>
+       <div class="val">${vals[i]} <span class="tick">✓ verankert</span></div>
+     </div>`).join('');
+})();
+const shiftScene = document.getElementById('shiftScene');
+const shiftStageEl = document.getElementById('shiftStage');
+const shiftRows = Array.from(shiftStageEl.children);
+const shiftCap = document.getElementById('shiftCap');
+const SHIFT_CAP = {
+  bad:  ['shift-caption bad',  '<strong>Übertragung von Hand:</strong> ab Zeile 13 rutscht jeder Wert eine Zeile nach unten — und niemand merkt es.'],
+  good: ['shift-caption good', '<strong>Philippos verankert jeden Wert am Bildausschnitt seiner Zeile.</strong> Scrollen Sie — jede Zeile rastet einzeln an ihren Platz. In der Zeile vertan? Unmöglich.'],
+};
+// Progressives Einrasten: pro Scroll rastet EINE Zeile ein → jeder Mausschritt
+// gibt sichtbares Feedback (vorher: ein einziger binärer Sprung über 280svh,
+// fühlte sich eingefroren an). lockedCount wächst mit dem Scroll-Fortschritt.
+let lastLocked = -1, lastPhase = null;
+function shiftTick(){
+  const prog = (sceneProgress(shiftScene) - 0.12) / 0.80;   // einrasten von 12 % bis 92 % (kaum tote Zone am Ende)
+  const locked = Math.max(0, Math.min(SHIFT_N, Math.round(prog * SHIFT_N)));
+  if (locked === lastLocked) return;                         // DOM nur bei Änderung
+  lastLocked = locked;
+  for (let i = 0; i < SHIFT_N; i++) shiftRows[i].classList.toggle('locked', i < locked);
+  const phase = locked === 0 ? 'bad' : 'good';
+  if (phase !== lastPhase){
+    lastPhase = phase;
+    const [cls, html] = SHIFT_CAP[phase];
+    shiftCap.className = cls;
+    shiftCap.innerHTML = html;
+  }
+}
+
+/* ───── Szene 4: Reißverschluss (Konsolidierung) ───── */
+// [Quelle, verstandener Wert, Tag] — Tag dient der Excel-Roh-Zeile.
+const ZIP = [
+  ['hand','06:30 – 13:00', 3],['xls','07:00 – 16:30', 4],['hand','06:45 – 15:15', 5],['xls','07:15 – 17:00', 6],
+  ['hand','06:15 – 14:45', 7],['xls','06:30 – 13:30', 8],['hand','07:00 – 16:00', 9],['xls','06:45 – 15:30', 10],
+];
+const ZIP_N = ZIP.length;
+const ZIP_STEP = 50;  // Zeilenhöhe (40px) + gap (10px) — für die Schieber-Position
+const zipScene = document.getElementById('zipScene');
+const zipRowsEl = document.getElementById('zipRows');
+// t-raw zeigt das ROHFORMAT (Handschrift-Bild bzw. Excel-Zelloptik), t-clean
+// den verstandenen Wert — beim Verzahnen blendet raw→clean über (das IST die
+// Lese-Leistung im Reißverschluss-Moment).
+function zipRaw(src, val, tag){
+  if (src === 'hand')
+    return `<span class="t-raw"><svg viewBox="0 0 150 22" preserveAspectRatio="none"><path d="${scribble(tag*5+3, 144)}" stroke="#3a4a8c" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".8"/></svg></span>`;
+  const [von, bis] = val.split(' – ');
+  return `<span class="t-raw t-xls"><span class="xcell xc-n">${String(tag).padStart(2,'0')}</span><span class="xcell">${von}</span><span class="xcell">${bis}</span></span>`;
+}
+zipRowsEl.innerHTML = ZIP.map(([src, val, tag]) =>
+  `<div class="zip-row src-${src}"><div class="tooth">${zipRaw(src, val, tag)}<span class="t-clean"><span>${val}</span><span class="t-badge">${src==='hand'?'✍ Scan':'⊞ Excel'}</span></span></div></div>`
+).join('');
+const zipRowEls = Array.from(zipRowsEl.children);
+const zipSlider = document.getElementById('zipSlider');
+const zipCap = document.getElementById('zipCap');
+const ZIP_CAP = {
+  open: ['zip-caption',      '<strong>Zwei unterschiedlich gewachsene Quellen</strong> — getrennt erfasst, getrennt fehleranfällig.'],
+  zip:  ['zip-caption',      '<strong>Philippos verzahnt sie Zeile für Zeile</strong> — wie ein Reißverschluss, in einem Schritt.'],
+  done: ['zip-caption done', '<strong>Ein einziger, geprüfter Prozess.</strong> Jede Zeile kennt ihre Herkunft — und ist messbar.'],
+};
+let lastZip = -1, lastZipPhase = null;
+function zipTick(){
+  const prog = (sceneProgress(zipScene) - 0.10) / 0.80;
+  const closed = Math.max(0, Math.min(ZIP_N, Math.round(prog * ZIP_N)));
+  if (closed === lastZip) return;
+  lastZip = closed;
+  for (let i = 0; i < ZIP_N; i++) zipRowEls[i].classList.toggle('closed', i < closed);
+  zipSlider.style.transform = `translate(-50%, ${Math.min(closed, ZIP_N - 1) * ZIP_STEP + 5}px)`;
+  zipSlider.style.opacity = closed >= ZIP_N ? '0' : '1';   // Reißverschluss zu → Schieber verschwindet
+  const phase = closed === 0 ? 'open' : closed >= ZIP_N ? 'done' : 'zip';
+  if (phase !== lastZipPhase){
+    lastZipPhase = phase;
+    const [cls, html] = ZIP_CAP[phase];
+    zipCap.className = cls;
+    zipCap.innerHTML = html;
+  }
+}
+
+/* ───── Scroll-Loop — nur laufen, wenn eine der Szenen sichtbar ist ───── */
+let loopId = null;
+const activeScenes = new Set();
+function loop(){ scanTick(); shiftTick(); zipTick(); loopId = requestAnimationFrame(loop); }
+if (!reduced){
+  const sceneIO = new IntersectionObserver((es) => {
+    es.forEach(e => e.isIntersecting ? activeScenes.add(e.target) : activeScenes.delete(e.target));
+    if (activeScenes.size > 0 && loopId === null){ loopId = requestAnimationFrame(loop); }
+    else if (activeScenes.size === 0 && loopId !== null){ cancelAnimationFrame(loopId); loopId = null; }
+  }, { threshold: 0 });
+  sceneIO.observe(zipScene);
+  sceneIO.observe(scanScene);
+  sceneIO.observe(shiftScene);
+} else {
+  drEls.forEach(el => el.classList.add('lit'));
+  lrEls.forEach(el => el?.classList.add('on'));
+  shiftRows.forEach(r => r.classList.add('locked'));
+  shiftCap.className = SHIFT_CAP.good[0];
+  shiftCap.innerHTML = SHIFT_CAP.good[1];
+  zipRowEls.forEach(r => r.classList.add('closed'));
+  zipCap.className = ZIP_CAP.done[0];
+  zipCap.innerHTML = ZIP_CAP.done[1];
+}
+
+/* ───── Enter-Animationen ───── */
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  if (e.target.id === 'opNos') e.target.classList.add('on');
+  if (e.target.id === 'opPoints') e.target.classList.add('on');
+  if (e.target.id === 'zipOut') e.target.classList.add('on');
+  if (e.target.id === 'loopList'){
+    [...e.target.children].forEach((li, i) => setTimeout(() => li.classList.add('on'), reduced ? 0 : i * 350));
+  }
+  if (e.target.id === 'curveCard') e.target.classList.add('on');
+  if (e.target.id === 'counters'){
+    e.target.querySelectorAll('.cnum[data-final]').forEach(el => {
+      const fin = +el.dataset.final, suf = el.dataset.suffix || '';
+      if (reduced){ el.innerHTML = fin + suf; return; }
+      const t0 = performance.now();
+      (function step(now){
+        const k = Math.min(1, (now - t0) / 1200);
+        el.innerHTML = Math.round(fin * (k*k*(3-2*k))) + suf;
+        if (k < 1) requestAnimationFrame(step);
+      })(t0);
+    });
+  }
+  io.unobserve(e.target);
+}), { threshold: .35 });
+io.observe(document.getElementById('opNos'));
+io.observe(document.getElementById('opPoints'));
+io.observe(document.getElementById('zipOut'));
+io.observe(document.getElementById('loopList'));
+io.observe(document.getElementById('curveCard'));
+io.observe(document.getElementById('counters'));
+</script>
+</body>
+</html>
